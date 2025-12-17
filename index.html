@@ -1,135 +1,88 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RC Robot Controller</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Noto Sans KR', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            user-select: none;
-        }
-
-        h1 { margin-bottom: 10px; font-size: 1.5rem; color: #03dac6; }
-
-        .status-box {
-            background-color: #1e1e1e; padding: 10px 20px; border-radius: 10px;
-            margin-bottom: 20px; border: 1px solid #333; text-align: center; width: 80%;
-        }
-        #current-mode { font-weight: bold; color: #bb86fc; }
-
-        .mode-toggles { display: flex; gap: 10px; margin-bottom: 30px; width: 90%; justify-content: center; }
-        .mode-btn {
-            flex: 1; padding: 15px; border: none; border-radius: 8px;
-            font-size: 1rem; font-weight: bold; cursor: pointer;
-            background-color: #333; color: #888; transition: all 0.2s;
-        }
-        .mode-btn.active { background-color: #bb86fc; color: #000; box-shadow: 0 0 10px rgba(187, 134, 252, 0.5); }
-
-        .control-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            opacity: 0.3; pointer-events: none; transition: opacity 0.3s;
-        }
-        .control-pad.active { opacity: 1; pointer-events: auto; }
-
-        .ctrl-btn {
-            width: 80px; height: 80px; border: none; border-radius: 15px;
-            background-color: #2c2c2c; color: white; font-size: 1.5rem;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;
-        }
-        .ctrl-btn:active { background-color: #03dac6; color: #000; transform: scale(0.95); }
-        .stop-btn { background-color: #cf6679; font-size: 1rem; font-weight: bold; }
-        .spacer { width: 80px; height: 80px; }
-
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Robot Controller</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body { background-color: #121212; color: #ffffff; font-family: 'Noto Sans KR', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
+h1 { margin-bottom: 20px; font-size: 1.5rem; color: #03dac6; }
+.mode-toggles { display: flex; gap: 10px; margin-bottom: 30px; width: 90%; justify-content: center; }
+.mode-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; background-color: #333; color: #888; transition: all 0.2s; }
+.mode-btn.active { background-color: #bb86fc; color: #000; }
+.control-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; opacity: 0.3; pointer-events: none; transition: opacity 0.3s; }
+.control-pad.active { opacity: 1; pointer-events: auto; }
+.ctrl-btn { width: 80px; height: 80px; border: none; border-radius: 15px; background-color: #2c2c2c; color: white; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer; }
+.ctrl-btn:active { background-color: #03dac6; color: #000; transform: scale(0.95); }
+.stop-btn { background-color: #cf6679; font-size: 1rem; font-weight: bold; }
+.spacer { width: 80px; height: 80px; }
+</style>
 </head>
 <body>
-
-    <h1>🤖 로봇 컨트롤러</h1>
-
-    <div class="status-box">
-        현재 상태: <span id="current-mode">연결 대기중...</span>
-    </div>
-
-    <div class="mode-toggles">
-        <button id="btn-auto" class="mode-btn" onclick="setMode('auto')">자율 모드</button>
-        <button id="btn-manual" class="mode-btn" onclick="setMode('manual')">수동 모드</button>
-    </div>
-
-    <div id="control-panel" class="control-pad">
-        <div class="spacer"></div>
-        <button class="ctrl-btn" ontouchstart="sendCommand('go')" onmousedown="sendCommand('go')">▲</button>
-        <div class="spacer"></div>
-
-        <button class="ctrl-btn" ontouchstart="sendCommand('left')" onmousedown="sendCommand('left')">◀</button>
-        <button class="ctrl-btn stop-btn" ontouchstart="sendCommand('stop')" onmousedown="sendCommand('stop')">STOP</button>
-        <button class="ctrl-btn" ontouchstart="sendCommand('right')" onmousedown="sendCommand('right')">▶</button>
-
-        <div class="spacer"></div>
-        <button class="ctrl-btn" ontouchstart="sendCommand('back')" onmousedown="sendCommand('back')">▼</button>
-        <div class="spacer"></div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDN1O2VCgc5VuhF_sJDgEWfcPrP3LqKxCY",
-            authDomain: "robot-950d7.firebaseapp.com",
-            databaseURL: "https://robot-950d7-default-rtdb.firebaseio.com",
-            projectId: "robot-950d7",
-            storageBucket: "robot-950d7.firebasestorage.app",
-            messagingSenderId: "228735089330",
-            appId: "1:228735089330:web:08b3a6c8dcf66cee5667ab",
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        const modeText = document.getElementById('current-mode');
-        const btnAuto = document.getElementById('btn-auto');
-        const btnManual = document.getElementById('btn-manual');
-        const controlPanel = document.getElementById('control-panel');
-
-        function setMode(mode) {
-            db.ref('mode').set(mode);
-            if (mode === 'auto') {
-                btnAuto.classList.add('active');
-                btnManual.classList.remove('active');
-                controlPanel.classList.remove('active');
-                modeText.innerText = "자율 주행 중";
-            } else {
-                btnAuto.classList.remove('active');
-                btnManual.classList.add('active');
-                controlPanel.classList.add('active');
-                modeText.innerText = "수동 조종 대기";
-            }
-        }
-
-        function sendCommand(cmd) {
-            if (btnManual.classList.contains('active')) {
-                db.ref('command').set(cmd);
-                console.log("명령 전송:", cmd);
-            }
-        }
-
-        db.ref('mode').on('value', (snapshot) => {
-            const val = snapshot.val();
-            if (val) setMode(val);
-        });
-    </script>
+<h1>🤖 Controller</h1>
+<div class="mode-toggles">
+<button id="btn-auto" class="mode-btn" onclick="setMode('auto')">자율 모드</button>
+<button id="btn-manual" class="mode-btn" onclick="setMode('manual')">수동 모드</button>
+</div>
+<div id="control-panel" class="control-pad">
+<div class="spacer"></div>
+<button class="ctrl-btn" ontouchstart="sendCommand('go')" onmousedown="sendCommand('go')">▲</button>
+<div class="spacer"></div>
+<button class="ctrl-btn" ontouchstart="sendCommand('left')" onmousedown="sendCommand('left')">◀</button>
+<button class="ctrl-btn stop-btn" ontouchstart="sendCommand('stop')" onmousedown="sendCommand('stop')">STOP</button>
+<button class="ctrl-btn" ontouchstart="sendCommand('right')" onmousedown="sendCommand('right')">▶</button>
+<div class="spacer"></div>
+<button class="ctrl-btn" ontouchstart="sendCommand('back')" onmousedown="sendCommand('back')">▼</button>
+<div class="spacer"></div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyDN1O2VCgc5VuhF_sJDgEWfcPrP3LqKxCY",
+authDomain: "robot-950d7.firebaseapp.com",
+databaseURL: "https://robot-950d7-default-rtdb.firebaseio.com",
+projectId: "robot-950d7",
+storageBucket: "robot-950d7.firebasestorage.app",
+messagingSenderId: "228735089330",
+appId: "1:228735089330:web:08b3a6c8dcf66cee5667ab"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const btnAuto = document.getElementById('btn-auto');
+const btnManual = document.getElementById('btn-manual');
+const controlPanel = document.getElementById('control-panel');
+function setMode(mode) {
+db.ref('mode').set(mode);
+pushLog(mode === 'auto' ? "자율 주행 시작" : "수동 모드 전환", "auto");
+}
+function sendCommand(cmd) {
+db.ref('command').set(cmd);
+let msg = "";
+let type = "move";
+if (cmd === 'go') msg = "전진 이동 (활동 감지)";
+else if (cmd === 'back') msg = "후진 이동 (활동 감지)";
+else if (cmd === 'left') msg = "좌회전 (방향 전환)";
+else if (cmd === 'right') msg = "우회전 (방향 전환)";
+else if (cmd === 'stop') { msg = "이동 정지 (휴식 상태)"; type = "stop"; }
+pushLog(msg, type);
+}
+function pushLog(message, type) {
+const now = new Date();
+const timeString = now.toLocaleTimeString('ko-KR', { hour12: false });
+db.ref('logs').push({ msg: message, type: type, time: timeString });
+}
+db.ref('mode').on('value', (snapshot) => {
+const val = snapshot.val();
+if (val === 'auto') {
+btnAuto.classList.add('active'); btnManual.classList.remove('active');
+controlPanel.classList.remove('active');
+} else {
+btnAuto.classList.remove('active'); btnManual.classList.add('active');
+controlPanel.classList.add('active');
+}
+});
+</script>
 </body>
 </html>
