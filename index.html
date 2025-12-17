@@ -6,9 +6,8 @@
     <title>RC Robot Controller</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 다크 모드 스타일 설정 */
         body {
-            background-color: #121212; /* 아주 어두운 회색 */
+            background-color: #121212;
             color: #ffffff;
             font-family: 'Noto Sans KR', sans-serif;
             display: flex;
@@ -17,103 +16,42 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            user-select: none; /* 텍스트 선택 방지 (버튼 누를 때 편함) */
+            user-select: none;
         }
 
-        h1 {
-            margin-bottom: 10px;
-            font-size: 1.5rem;
-            color: #03dac6; /* 네온 민트색 포인트 */
-        }
+        h1 { margin-bottom: 10px; font-size: 1.5rem; color: #03dac6; }
 
-        /* 상태 표시창 */
         .status-box {
-            background-color: #1e1e1e;
-            padding: 10px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
-            text-align: center;
-            width: 80%;
+            background-color: #1e1e1e; padding: 10px 20px; border-radius: 10px;
+            margin-bottom: 20px; border: 1px solid #333; text-align: center; width: 80%;
         }
-        #current-mode {
-            font-weight: bold;
-            color: #bb86fc; /* 연보라색 포인트 */
-        }
+        #current-mode { font-weight: bold; color: #bb86fc; }
 
-        /* 모드 전환 버튼 영역 */
-        .mode-toggles {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            width: 90%;
-            justify-content: center;
-        }
-
+        .mode-toggles { display: flex; gap: 10px; margin-bottom: 30px; width: 90%; justify-content: center; }
         .mode-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            background-color: #333;
-            color: #888;
+            flex: 1; padding: 15px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+            background-color: #333; color: #888; transition: all 0.2s;
         }
+        .mode-btn.active { background-color: #bb86fc; color: #000; box-shadow: 0 0 10px rgba(187, 134, 252, 0.5); }
 
-        /* 활성화된 모드 버튼 스타일 */
-        .mode-btn.active {
-            background-color: #bb86fc;
-            color: #000;
-            box-shadow: 0 0 10px rgba(187, 134, 252, 0.5);
-        }
-
-        /* 수동 조종 패드 (D-Pad) */
+        /* 컨트롤 패드 (3열 그리드) */
         .control-pad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            opacity: 0.3; /* 기본은 비활성화 상태처럼 보이게 */
-            pointer-events: none; /* 클릭 불가 */
-            transition: opacity 0.3s;
+            opacity: 0.3; pointer-events: none; transition: opacity 0.3s;
         }
-
-        /* 수동 모드일 때 조종 패드 활성화 */
-        .control-pad.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .control-pad.active { opacity: 1; pointer-events: auto; }
 
         .ctrl-btn {
-            width: 80px;
-            height: 80px;
-            border: none;
-            border-radius: 15px;
-            background-color: #2c2c2c;
-            color: white;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            cursor: pointer;
+            width: 80px; height: 80px; border: none; border-radius: 15px;
+            background-color: #2c2c2c; color: white; font-size: 1.5rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;
         }
-
-        .ctrl-btn:active {
-            background-color: #03dac6;
-            color: #000;
-            transform: scale(0.95);
-        }
-
-        .stop-btn {
-            background-color: #cf6679; /* 빨간색 계열 */
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-        /* 빈 공간 채우기용 */
+        .ctrl-btn:active { background-color: #03dac6; color: #000; transform: scale(0.95); }
+        .stop-btn { background-color: #cf6679; font-size: 1rem; font-weight: bold; }
         .spacer { width: 80px; height: 80px; }
 
     </style>
@@ -139,15 +77,16 @@
         <button class="ctrl-btn" ontouchstart="sendCommand('left')" onmousedown="sendCommand('left')">◀</button>
         <button class="ctrl-btn stop-btn" ontouchstart="sendCommand('stop')" onmousedown="sendCommand('stop')">STOP</button>
         <button class="ctrl-btn" ontouchstart="sendCommand('right')" onmousedown="sendCommand('right')">▶</button>
+
+        <div class="spacer"></div>
+        <button class="ctrl-btn" ontouchstart="sendCommand('back')" onmousedown="sendCommand('back')">▼</button>
+        <div class="spacer"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // ==========================================
-        // ⚠️ 여기에 본인의 파이어베이스 설정을 붙여넣으세요
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDN1O2VCgc5VuhF_sJDgEWfcPrP3LqKxCY",
 			authDomain: "robot-950d7.firebaseapp.com",
@@ -158,49 +97,40 @@
 			appId: "1:228735089330:web:08b3a6c8dcf66cee5667ab",
         };
 
-        // 파이어베이스 초기화
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // HTML 요소 가져오기
         const modeText = document.getElementById('current-mode');
         const btnAuto = document.getElementById('btn-auto');
         const btnManual = document.getElementById('btn-manual');
         const controlPanel = document.getElementById('control-panel');
 
-        // 1. 모드 변경 함수
         function setMode(mode) {
             db.ref('mode').set(mode);
-            
-            // UI 업데이트
             if (mode === 'auto') {
                 btnAuto.classList.add('active');
                 btnManual.classList.remove('active');
-                controlPanel.classList.remove('active'); // 패드 비활성화
+                controlPanel.classList.remove('active');
                 modeText.innerText = "자율 주행 중";
             } else {
                 btnAuto.classList.remove('active');
                 btnManual.classList.add('active');
-                controlPanel.classList.add('active'); // 패드 활성화
+                controlPanel.classList.add('active');
                 modeText.innerText = "수동 조종 대기";
             }
         }
 
-        // 2. 이동 명령 함수 (버튼 누를 때 실행)
         function sendCommand(cmd) {
-            // 수동 모드일 때만 명령 전송
             if (btnManual.classList.contains('active')) {
                 db.ref('command').set(cmd);
                 console.log("명령 전송:", cmd);
             }
         }
 
-        // 3. DB에서 현재 상태 실시간 감지 (다른 폰에서 바꿔도 반영됨)
         db.ref('mode').on('value', (snapshot) => {
             const val = snapshot.val();
             if (val) setMode(val);
         });
-
     </script>
 </body>
 </html>
